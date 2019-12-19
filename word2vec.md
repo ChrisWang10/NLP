@@ -34,3 +34,18 @@ wi is the word and z(wi) is the frequency.Then the possibility of keeping the wo
 
 **Negative Sampling**
 
+Since our model contains huge number of weight and evry training sample will update all of these weights every iteration. We don't want to update all of parameters. Negative sampling addresses this by having each training sample ***only modify a small percentage of the weights***, rather than all of them.  
+
+To be sepecific, the output of the model is a vector represent the possibility of each word being the nearby word of input word. We call the words of output that have 0-value neuron **'Negative words'** . Then we randomly choose just a small number of 'negative' words to update the weights.
+
+In the hidden layer, only the weights for input word are updated, no matter whether you're using Negative sampling or not.
+
+**Selecting Negative samples**
+
+ The “negative samples  are selected using a “unigram distribution”, where more frequent words are more likely to be selected as negative samples. 
+
+
+
+## word pairs and phrase
+
+ a word pair like “Boston Globe” (a newspaper) has a much different meaning than the individual words “Boston” and “Globe”. 
