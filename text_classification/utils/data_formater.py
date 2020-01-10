@@ -72,6 +72,8 @@ def gen_corpus():
             row_txt += ' '
         seg_list = jieba.cut(row_txt)
         result = remove_stop_words(seg_list)
+        if len(result) <= 1:
+            continue
         save_file.write(result + '\n')
 
 
@@ -85,5 +87,5 @@ def get_label(corpus):
 
 
 if __name__ == '__main__':
-    # gen_corpus()
-    get_label(target[0])
+    gen_corpus()
+    # get_label(target[0])
