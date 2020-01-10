@@ -1,16 +1,20 @@
 import torch.nn as nn
 import torch
+import random
 from xmlrpc.client import ServerProxy
 import numpy as np
+import jieba
 import os
 from tqdm import tqdm
 import pickle
+from .data_formater import remove_stop_words
+from .data_formater import stop_words_dict
 
 server = ServerProxy("http://172.20.7.96:10243")
 # os._exit(0)
 
 UNK, PAD = '<UNK>', '<PAD>'
-label_dict = {'职业发展': 1, '学业': 2, '心理方面': 3, '恋爱关系': 4}
+label_dict = {'职业发展': 0, '学业': 1, '心理方面': 2, '恋爱关系': 3}
 
 
 def build_vocabulary(file_path, min_freq):
@@ -74,6 +78,25 @@ def build_datasets():
     return train
 
 
+def build_test_data(sentence):
+    vocab = pickle.load(open(r'C:\Users\v_wangchao3\code\MyProject\MyTask\text_classification\utils\voab.pkl', 'rb'))
+    words_line = []
+    seg_list = jieba.cut(sentence)
+    result = remove_stop_words(seg_list)
+    if len(result) <= 1:
+        print('too short!')
+    else:
+        print('分词，去掉停用词后====={}'.format(result))
+        result = result.split(' ')
+        if len(result) < 32:
+            result.extend([vocab.get(PAD)] * (32 - len(result)))
+        else:
+            result = result[:32]
+        for word in result:
+            words_line.append(vocab.get(word, vocab.get(UNK)))
+        return [words_line]
+
+
 class DatasetIterater(object):
     def __init__(self, batches, batch_size, device):
         self.batch_size = batch_size
@@ -86,10 +109,8 @@ class DatasetIterater(object):
         self.device = device
 
     def _to_tensor(self, datas):
-        print(datas[:10])
         x = [v[0] for v in datas]
-        print(x)
-        x = torch.FloatTensor(x)
+        x = torch.LongTensor(x)
         y = torch.from_numpy(np.array([_[1] for _ in datas]))
         # seq_len = torch.tensor([_[2] for _ in datas]).to(self.device)
         return (x, 0), y
@@ -150,5 +171,5 @@ if __name__ == '__main__':
     # word_to_id = pickle.load(open('voab.pkl', 'rb'))
     # print(word_to_id['说'])
     # embeddings = np.random.rand(len(word_to_id), emb_dim)
-    # build_datasets()
-    load_embeddings()
+    build_datasets()
+    # load_embeddings()
