@@ -33,7 +33,7 @@ def gen_stop_words_dict():
 
 
 def stop_words_dict():
-    with open('stop_words.txt', 'rb') as fp:
+    with open(r'C:\Users\v_wangchao3\code\MyProject\MyTask\text_classification\utils\stop_words.txt', 'rb') as fp:
         stop_words_dict = pickle.load(fp)
         return stop_words_dict
 
