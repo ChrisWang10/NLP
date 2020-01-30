@@ -6,11 +6,11 @@ import torch.nn.functional as F
 from sklearn import metrics
 import numpy as np
 
-from utils.prepare_data import build_iterator
-from utils.prepare_data import build_datasets
-from utils.prepare_data import build_test_data
-from textCNN import Config
-from textCNN import Model
+from .utils.prepare_data import build_iterator
+from .utils.prepare_data import build_datasets
+from .utils.prepare_data import build_test_data
+from .textCNN import Config
+from .textCNN import Model
 
 config = Config()
 
