@@ -1,20 +1,18 @@
 import torch.nn as nn
 import torch
 import random
-from xmlrpc.client import ServerProxy
 import numpy as np
-import jieba
+import pkuseg
 import os
 from tqdm import tqdm
 import pickle
-from .data_formater import remove_stop_words
-from .data_formater import stop_words_dict
+from utils.data_formater import remove_stop_words
+from config import Cfg
 
-server = ServerProxy("http://172.20.7.96:10243")
-# os._exit(0)
-
+config = Cfg()
+jieba = pkuseg.pkuseg()
 UNK, PAD = '<UNK>', '<PAD>'
-label_dict = {'职业发展': 0, '学业': 1, '心理方面': 2, '恋爱关系': 3}
+label_dict = {'职业发展': 0, '学业方面': 1, '心理方面': 2, '恋爱关系': 3}
 
 
 def build_vocabulary(file_path, min_freq):
@@ -33,8 +31,6 @@ def build_vocabulary(file_path, min_freq):
                 continue
             for word in line:
                 vocab[word] = vocab.get(word, 0) + 1
-                # print(np.fromstring(server.get_vector(word).data))
-                # os._exit(0)
         vocab_list = sorted([_ for _ in vocab.items() if _[1] >= min_freq], key=lambda x: x[1], reverse=True)
         vocab = {word[0]: id for id, word in enumerate(vocab_list)}
         vocab.update({UNK: len(vocab), PAD: len(vocab) + 1})
@@ -79,10 +75,11 @@ def build_datasets():
 
 
 def build_test_data(sentence):
-    vocab = pickle.load(open(r'C:\Users\v_wangchao3\code\MyProject\MyTask\text_classification\utils\voab.pkl', 'rb'))
+    vocab = pickle.load(open(r'C:\Users\king\Documents\code\NLP\text_classification\utils\topic_vocab.pkl', 'rb'))
     words_line = []
     seg_list = jieba.cut(sentence)
     result = remove_stop_words(seg_list)
+    result = ' '.join(result)
     if len(result) <= 1:
         print('too short!')
     else:
@@ -146,23 +143,83 @@ def build_iterator(dataset, batch_size, device):
 
 
 def load_embeddings():
+    with open(r'C:\Users\king\Documents\code\NLP\text_classification\data\embeddings.pkl', 'rb') as fp:
+        embeddings = pickle.load(fp)
     with open('./voab.pkl', 'rb') as fp:
         vocab = pickle.load(fp)
     embeddings = np.zeros((len(vocab), 100))
     for word, idx in tqdm(vocab.items()):
         try:
-            vector = np.fromstring(server.get_vector(word).data)
+            vector = embeddings[word]
         except Exception as e:
             print('{} dont have embedding'.format(word))
-            vector = np.random.uniform(-1, 1, 100)
+            vector = np.zeros(100)
         embeddings[idx] = vector
-    with open('../data/embeddings.pl', 'wb') as fp:
+    with open('../data/topic_embeddings.pkl', 'wb') as fp:
         pickle.dump(embeddings, fp)
+
+
+def gen_topic_train_data():
+    import pandas as pd
+    import re
+    cop = re.compile("[^\u4e00-\u9fa5^.^,^，^a-z^A-Z^0-9]")
+    source_root = r'C:\Users\king\Desktop\兔兔的论文\数据'
+    data = []
+    print('1.整合数据，并分词, 去除停用词')
+    for exl in os.listdir(source_root):
+        for topic in label_dict:
+            try:
+                df = pd.read_excel(os.path.join(source_root, exl), sheet_name=topic)
+            except:
+                continue
+
+            content = df['content']
+            for line in tqdm(content):
+                if type(line) == str:
+                    data.append((remove_stop_words(jieba.cut(cop.sub('', line.strip()))), label_dict[topic]))
+
+    print('2.构建词汇表')
+    vocab = {}
+    for sample in tqdm(data):
+        seg_sentence = sample[0]
+        for word in seg_sentence:
+            vocab[word] = vocab.get(word, 0) + 1
+    vocab_list = sorted([_ for _ in vocab.items() if _[1] >= 3], key=lambda x: x[1], reverse=True)
+    vocab = {word[0]: id for id, word in enumerate(vocab_list)}
+    vocab.update({UNK: len(vocab), PAD: len(vocab) + 1})
+
+    with open(os.path.join(config.word2vec_from_scratch, 'topic_vocab.pkl'), 'wb') as fp:
+        pickle.dump(vocab, fp)
+
+    print('3.将语料根据词典转换为数')
+    numerical_data = []
+    for sample in tqdm(data):
+        res = [vocab.get(word, vocab.get(UNK)) for word in sample[0]]
+        if len(res) < 32:
+            res += [vocab[PAD] for _ in range(32 - len(res))]
+        else:
+            res = res[:32]
+        numerical_data.append((res, sample[1]))
+    with open(os.path.join(config.train_data, 'topic_train.pkl'), 'wb') as fb:
+        pickle.dump(numerical_data, fb)
+
+    print(' 4.建立词向量表')
+    word2vec = pickle.load(
+        open(os.path.join(config.word2vec_from_scratch, 'embeddings.pkl'), 'rb')
+    )
+    weight = np.zeros((len(vocab), 100), dtype=float)
+    for word, idx in tqdm(vocab.items()):
+        try:
+            weight[idx, :] = word2vec[word]
+        except:
+            weight[idx, :] = np.array([0 for _ in range(100)])
+    with open('../data/topic_emb_weights.pkl', 'wb') as fp:
+        pickle.dump(weight, fp)
 
 
 if __name__ == '__main__':
     train_path = '../data/corpus.txt'
-    emb_dim = 300
+    emb_dim = 100
 
     """
     构建词表
@@ -171,5 +228,6 @@ if __name__ == '__main__':
     # word_to_id = pickle.load(open('voab.pkl', 'rb'))
     # print(word_to_id['说'])
     # embeddings = np.random.rand(len(word_to_id), emb_dim)
-    build_datasets()
+    # build_datasets()
     # load_embeddings()
+    gen_topic_train_data()

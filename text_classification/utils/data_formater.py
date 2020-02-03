@@ -5,6 +5,7 @@ import os
 import re
 from tqdm import tqdm
 
+
 source_path = r'C:\Users\v_wangchao3\code\MyProject\result.xlsx'
 target = [r'C:\Users\v_wangchao3\code\MyProject\MyTask\text_classification\data\corpus.txt']
 stop_words_path = r'C:\Users\v_wangchao3\code\MyProject\MyTask\text_classification\stopwords'
@@ -33,7 +34,7 @@ def gen_stop_words_dict():
 
 
 def stop_words_dict():
-    with open(r'C:\Users\v_wangchao3\code\MyProject\MyTask\text_classification\utils\stop_words.txt', 'rb') as fp:
+    with open(r'C:\Users\king\Documents\code\NLP\text_classification\sentiment\stop.txt', 'rb') as fp:
         stop_words_dict = pickle.load(fp)
         return stop_words_dict
 
@@ -45,14 +46,15 @@ stop_words_dict['日'] = 1
 
 
 def remove_stop_words(source):
-    ret = ''
+    ret = []
     for words in source:
         if words in stop_words_dict:
             continue
+        ret.append(words)
         # if re.search('[a-z]', words) or re.search('[A-Z]', words) or re.search('[0-1]', words):
         #     continue
-        if check_contain_chinese(words):
-            ret += ' ' + re.sub(substitute, "", words)
+        # if check_contain_chinese(words):
+        #     ret += ' ' + re.sub(substitute, "", words)
     return ret
 
 

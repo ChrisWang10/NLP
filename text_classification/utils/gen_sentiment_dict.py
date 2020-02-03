@@ -8,10 +8,12 @@ pos_path = [r'C:\Users\king\Documents\code\NLP\text_classification\sentiment\pos
             r'C:\Users\king\Desktop\sentiment\pos1.txt']
 intensity_path = r'C:\Users\king\Desktop\sentiment\intensity.txt'
 deny_path = r'C:\Users\king\Desktop\sentiment\deny.txt'
+stop_words_path = r'C:\Users\king\Documents\code\NLP\text_classification\stopwords\百度停用词表.txt'
 
 senti_save_path = r'C:\Users\king\Documents\code\NLP\text_classification\sentiment\ntsu_hownet.txt'
 intensity_save_path = r'C:\Users\king\Documents\code\NLP\text_classification\sentiment\intensity.txt'
 negation_save_path = r'C:\Users\king\Documents\code\NLP\text_classification\sentiment\negation.txt'
+stop_save_path = r'C:\Users\king\Documents\code\NLP\text_classification\sentiment\stop.txt'
 
 import os
 
@@ -93,17 +95,43 @@ if not os.path.exists(negation_save_path):
         pickle.dump(res, fb)
 
 print('Done!')
-print('Testing...')
 
-with open(senti_save_path, 'rb') as fp:
-    senti_dict = pickle.load(fp)
 
-with open(intensity_save_path, 'rb') as fp:
-    intensity_dict = pickle.load(fp)
+def test():
+    print('Testing...')
+    with open(senti_save_path, 'rb') as fp:
+        senti_dict = pickle.load(fp)
 
-with open(negation_save_path, 'rb') as fp:
-    negation_dict = pickle.load(fp)
+    with open(intensity_save_path, 'rb') as fp:
+        intensity_dict = pickle.load(fp)
 
-print(senti_dict)
-print(intensity_dict)
-print(negation_dict)
+    with open(negation_save_path, 'rb') as fp:
+        negation_dict = pickle.load(fp)
+    print(senti_dict)
+    print(intensity_dict)
+    print(negation_dict)
+
+
+if not os.path.exists(stop_save_path):
+    res = {}
+    with open(stop_words_path, 'r', encoding='utf-8') as f:
+        for line in f.readlines():
+            res[line.strip()] = 1
+    with open(stop_save_path, 'wb') as fb:
+        pickle.dump(res, fb)
+print('stop words done!')
+
+for file in pos_path + neg_path:
+    encoding = 'utf-8'
+    todo = True
+    print(file)
+    while todo:
+        try:
+            for line in open(file, 'r', encoding=encoding).readlines():
+                print(line.strip())
+                if line.strip() == '厉害':
+                    print(file)
+                    os._exit(0)
+            todo = False
+        except:
+            encoding = 'gbk' if encoding == 'utf-8' else 'utf-8'
